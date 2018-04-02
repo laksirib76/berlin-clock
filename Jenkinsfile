@@ -5,9 +5,15 @@ pipeline {
         maven 'maven3'
     }
     stages {
-        stage('Install') {
+        stage('Install and Sonar parallel') {
             steps {
-                sh "mvn -U clean test cobertura:cobertura -Dcobertura.report.format=xml"
+				parallel(
+					install: {
+						sh "mvn -U clean test cobertura:cobertura -Dcobertura.report.format=xml"
+					}, sonar: {
+						sh "mvn sonar:sonar -Dsonar.host.url=${env.SONARQUBE_HOST}"
+					})
+                
             }
 			post {
 				always {
@@ -15,11 +21,6 @@ pipeline {
 					step([$class: 'CoberturaPublisher', coberturaReportFile: 'target/site/cobertura/coverage.xml'])
 				}
 			}
-        }
-		stage('Sonar') {
-            steps {
-                sh "mvn sonar:sonar -Dsonar.host.url=${env.SONARQUBE_HOST}"
-            }
         }
     }
 }
